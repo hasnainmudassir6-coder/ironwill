@@ -8,9 +8,50 @@ import { APP_NAME } from './constants';
 
 type View = 'DASHBOARD' | 'LOG' | 'SHUTDOWN' | 'LOCKED';
 
+// Helper to calculate streak based on consecutive days
+const calculateCurrentStreak = (entries: DailyEntry[]): number => {
+  if (entries.length === 0) return 0;
+  
+  // Sort descending by date string just to be safe
+  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  
+  // Get Today and Yesterday in YYYY-MM-DD format (UTC)
+  const today = new Date().toISOString().split('T')[0];
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+  const latest = sorted[0].date;
+
+  // If the last entry isn't today or yesterday, the streak is broken
+  if (latest !== today && latest !== yesterday) {
+    return 0;
+  }
+
+  let streak = 1;
+  
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const current = new Date(sorted[i].date);
+    const prev = new Date(sorted[i+1].date);
+    
+    // Calculate difference in days
+    const diffTime = Math.abs(current.getTime() - prev.getTime());
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+    
+    if (diffDays === 1) {
+      streak++;
+    } else {
+      break; // Streak broken (gap > 1 day)
+    }
+  }
+  
+  return streak;
+};
+
 export default function App() {
   const [view, setView] = useState<View>('DASHBOARD');
   const [entries, setEntries] = useState<DailyEntry[]>([]);
+  const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const loadData = () => {
@@ -18,6 +59,7 @@ export default function App() {
     // Sort by timestamp descending
     data.sort((a, b) => b.timestamp - a.timestamp);
     setEntries(data);
+    setStreak(calculateCurrentStreak(data));
     return data;
   };
 
@@ -68,7 +110,9 @@ export default function App() {
       <nav className="fixed top-0 w-full z-50 bg-void/90 backdrop-blur border-b border-dim px-4 py-3 flex justify-between items-center">
         <h1 className="text-sm font-bold tracking-widest">{APP_NAME}</h1>
         <div className="flex gap-4 text-[10px] uppercase text-gray-500">
-           <span>Streak: {entries.length}</span>
+           <span className={streak > 0 ? "text-success font-bold" : "text-gray-500"}>
+             Streak: {streak}
+           </span>
            <button onClick={() => setView('LOG')} className={view === 'LOG' ? 'text-white' : ''}>+ Log</button>
            <button onClick={() => setView('DASHBOARD')} className={view === 'DASHBOARD' ? 'text-white' : ''}>Dash</button>
         </div>
