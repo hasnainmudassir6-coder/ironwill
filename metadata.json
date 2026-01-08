@@ -1,0 +1,7 @@
+{
+  "name": "IronWill OS",
+  "description": "A strict, AI-powered daily life operating system for tracking discipline, habits, and identity. Designed for top 1% performance tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
